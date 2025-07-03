@@ -37,14 +37,17 @@ def request_inference():
 def handle_contact():
     try:
         data = request.get_json()
+        print("📩 Incoming request body:", data)
+
         name = data.get('name')
         email = data.get('email')
         message_body = data.get('message')
 
+        print(f"📌 Name: {name}, Email: {email}, Message: {message_body}")
+
         if not all([name, email, message_body]):
             return jsonify({"error": "Missing required fields: name, email, or message"}), 400
 
-        # Format the message for WhatsApp
         whatsapp_message = (
             f"📬 *New Contact Form Submission*\n\n"
             f"*From:* {name}\n"
@@ -52,19 +55,19 @@ def handle_contact():
             f"*Message:*\n{message_body}"
         )
 
-        # Send the message using Twilio
         message = client.messages.create(
-            from_=f'whatsapp:{TWILIO_NUMBER}',
-            to=f'whatsapp:{MY_PHONE}',
+            from_=TWILIO_NUMBER,
+            to=MY_PHONE,
             body=whatsapp_message
         )
-        
-        print(f"✅ Contact form message sent successfully. SID: {message.sid}")
+
+        print("✅ WhatsApp message sent")
         return jsonify({"message": "Your message has been sent successfully!"}), 200
 
     except Exception as e:
-        print(f"❌ Failed to handle contact form: {str(e)}")
-        return jsonify({"error": "An internal server error occurred."}), 500
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
 
 
 # Route to receive WhatsApp replies
