@@ -1,14 +1,19 @@
-from flask import Flask, request, jsonify
-from flask_cors import CORS # Import CORS
+from flask import Flask, request, jsonify, make_response
+from flask_cors import CORS, cross_origin
 from twilio.rest import Client
 import os
 
 app = Flask(__name__)
 
-# ✅ Enable CORS for all routes, allowing your frontend to connect.
-# For production, you might want to restrict this to your frontend's domain:
-# CORS(app, resources={r"/*": {"origins": "https://your-frontend-domain.com"}})
-CORS(app)
+# Configure CORS with more specific settings
+cors = CORS(app, resources={
+    r"/*": {
+        "origins": ["http://localhost:3000", "https://www.cuttu.in", "https://cuttu.in"],
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"],
+        "supports_credentials": True
+    }
+})
 
 # Load environment variables
 TWILIO_SID = os.getenv("TWILIO_ACCOUNT_SID")
@@ -84,7 +89,19 @@ def whatsapp_webhook():
 
     return "OK", 200
 
+# Add a root route to handle OPTIONS requests
+@app.route('/', methods=['GET', 'OPTIONS'])
+@cross_origin()
+def handle_root():
+    if request.method == 'OPTIONS':
+        response = make_response()
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        response.headers.add('Access-Control-Allow-Headers', '*')
+        response.headers.add('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        return response
+    return jsonify({"status": "Server is running"}), 200
+
 # Start app with proper host/port for Render
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
-    app.run(debug=True, host='0.0.0.0', port=port)
+    app.run(debug=True, host='0.0.0.0', port=port, threaded=True)
